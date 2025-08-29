@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load tz %}
+
+{% block title %}Paquete — Detalle{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">Detalle del paquete</h1>
+    <div class="flex gap-2">
+      {% with pkg=package|default:object %}
+        {% if pkg %}
+          {% if perms.packages.change_package %}
+            <a href="{% url 'packages:edit' pkg.pk %}" class="px-3 py-2 text-sm rounded bg-blue-600 text-white hover:bg-blue-700">Editar</a>
+          {% endif %}
+          {% if perms.packages.delete_package %}
+            <a href="{% url 'packages:delete' pkg.pk %}" class="px-3 py-2 text-sm rounded bg-red-600 text-white hover:bg-red-700">Eliminar</a>
+          {% endif %}
+          <a href="{% url 'packages:list' %}" class="px-3 py-2 text-sm rounded border">Volver</a>
+        {% endif %}
+      {% endwith %}
+    </div>
+  </div>
+
+  {% with pkg=package|default:object %}
+  {% if not pkg %}
+    <div class="p-4 rounded bg-yellow-50 border border-yellow-200">No se encontró el paquete en el contexto (esperado como variable <code>package</code> o <code>object</code>).</div>
+  {% else %}
+
+  <!-- Header -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="p-4 border rounded">
+      <h2 class="font-semibold mb-2">Identificación</h2>
+      <dl class="text-sm space-y-1">
+        <div class="flex justify-between"><dt class="text-gray-500">Tracking</dt><dd class="font-mono">{{ pkg.tracking_number|default:'—' }}</dd></div>
+        <div class="flex justify-between"><dt class="text-gray-500">Estado</dt><dd>
+          <span class="px-2 py-0.5 rounded text-xs {{ pkg.status|default:'unknown'|yesno:'bg-green-100 text-green-800,bg-gray-100 text-gray-800' }}">{{ pkg.status|default:'—' }}</span>
+        </dd></div>
+        <div class="flex justify-between"><dt class="text-gray-500">Prioridad</dt><dd>{{ pkg.priority|default:'—' }}</dd></div>
+      </dl>
+    </div>
+
+    <div class="p-4 border rounded">
+      <h2 class="font-semibold mb-2">Destino</h2>
+      <dl class="text-sm space-y-1">
+        <div><dt class="text-gray-500">Destinatario</dt><dd>{{ pkg.recipient_name|default:'—' }}</dd></div>
+        <div><dt class="text-gray-500">Dirección</dt>
+          <dd>
+            {{ pkg.addr_street|default:'' }}<br>
+            {{ pkg.addr_city|default:'' }} {{ pkg.addr_state|default:'' }} {{ pkg.addr_zip|default:'' }}
+          </dd>
+        </div>
+        <div class="flex justify-between"><dt class="text-gray-500">Teléfono</dt><dd>{{ pkg.customer_phone|default:'—' }}</dd></div>
+        <div class="flex justify-between"><dt class="text-gray-500">Notas</dt><dd>{{ pkg.note|default:'—' }}</dd></div>
+      </dl>
+    </div>
+
+    <div class="p-4 border rounded">
+      <h2 class="font-semibold mb-2">Asignación & Tiempos</h2>
+      <dl class="text-sm space-y-1">
+        <div class="flex justify-between"><dt class="text-gray-500">Conductor asignado</dt><dd>
+          {% if pkg.assigned_driver %}
+            <a class="text-blue-700 hover:underline" href="{% url 'drivers:detail' pkg.assigned_driver.pk %}">{{ pkg.assigned_driver }}</a>
+          {% else %}
+            —
+          {% endif %}
+        </dd></div>
+        <div class="flex justify-between"><dt class="text-gray-500">Promised date</dt><dd>{{ pkg.promised_date|date:'Y-m-d'|default:'—' }}</dd></div>
+        <div class="flex justify-between"><dt class="text-gray-500">Creado</dt><dd>{{ pkg.created_at|date:'Y-m-d H:i'|default:'—' }}</dd></div>
+        <div class="flex justify-between"><dt class="text-gray-500">Último evento</dt><dd>{{ pkg.last_event_at|date:'Y-m-d H:i'|default:'—' }}</dd></div>
+        <div class="flex justify-between"><dt class="text-gray-500">Entregado</dt><dd>{{ pkg.delivered_at|date:'Y-m-d H:i'|default:'—' }}</dd></div>
+      </dl>
+    </div>
+  </div>
+
+  <!-- Coordenadas -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <div class="p-4 border rounded">
+      <h2 class="font-semibold mb-2">Coordenadas de destino</h2>
+      <p class="text-sm">Lat: {{ pkg.dest_lat|default:'—' }} | Lon: {{ pkg.dest_lon|default:'—' }}</p>
+      {% if pkg.dest_lat and pkg.dest_lon %}
+        <div class="mt-2 text-xs text-gray-500">
+          <a class="text-blue-700 hover:underline" target="_blank" rel="noopener" href="https://maps.google.com/?q={{ pkg.dest_lat }},{{ pkg.dest_lon }}">Abrir en Google Maps</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="p-4 border rounded">
+      <h2 class="font-semibold mb-2">Datos adicionales</h2>
+      <dl class="text-sm space-y-1">
+        <div class="flex justify-between"><dt class="text-gray-500">Peso</dt><dd>{{ pkg.weight|default:'—' }}</dd></div>
+        <div class="flex justify-between"><dt class="text-gray-500">COD</dt><dd>{{ pkg.cod_amount|default:'—' }}</dd></div>
+        <div class="flex justify-between"><dt class="text-gray-500">Warehouse</dt><dd>{{ pkg.warehouse|default:'—' }}</dd></div>
+        <div class="flex justify-between"><dt class="text-gray-500">Intentos</dt><dd>{{ pkg.attempt_count|default:0 }}</dd></div>
+      </dl>
+    </div>
+  </div>
+
+  <!-- Evidencias / Fotos POD (si existen en el contexto como pod_photos) -->
+  {% if pod_photos %}
+  <div class="mb-6">
+    <h2 class="font-semibold mb-2">Fotos POD</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {% for photo in pod_photos %}
+        <a href="{{ photo.url }}" target="_blank" class="block border rounded overflow-hidden">
+          <img src="{{ photo.thumb_url|default:photo.url }}" alt="POD" class="w-full h-40 object-cover">
+        </a>
+      {% empty %}
+        <p class="text-sm text-gray-500">Sin fotos</p>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Historial de eventos -->
+  <div class="mb-6">
+    <h2 class="font-semibold mb-2">Historial de eventos</h2>
+    <div class="overflow-x-auto border rounded">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-3 py-2 text-left">Fecha</th>
+            <th class="px-3 py-2 text-left">Tipo</th>
+            <th class="px-3 py-2 text-left">De → A</th>
+            <th class="px-3 py-2 text-left">Driver</th>
+            <th class="px-3 py-2 text-left">Notas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if events %}
+            {% for ev in events %}
+              <tr class="border-t">
+                <td class="px-3 py-2">{{ ev.at_ts|date:'Y-m-d H:i' }}</td>
+                <td class="px-3 py-2">{{ ev.type|default:'—' }}</td>
+                <td class="px-3 py-2">{{ ev.status_from|default:'—' }} → {{ ev.status_to|default:'—' }}</td>
+                <td class="px-3 py-2">{{ ev.driver|default:'—' }}</td>
+                <td class="px-3 py-2">{{ ev.notes|default:'—' }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5" class="px-3 py-4 text-center text-gray-500">Sin eventos</td></tr>
+            {% endfor %}
+          {% else %}
+            {# Fallback si no se pasó 'events' en el contexto: intentar related_name por defecto #}
+            {% for ev in pkg.packageevent_set.all %}
+              <tr class="border-t">
+                <td class="px-3 py-2">{{ ev.at_ts|date:'Y-m-d H:i' }}</td>
+                <td class="px-3 py-2">{{ ev.type|default:'—' }}</td>
+                <td class="px-3 py-2">{{ ev.status_from|default:'—' }} → {{ ev.status_to|default:'—' }}</td>
+                <td class="px-3 py-2">{{ ev.driver|default:'—' }}</td>
+                <td class="px-3 py-2">{{ ev.notes|default:'—' }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5" class="px-3 py-4 text-center text-gray-500">Sin eventos</td></tr>
+            {% endfor %}
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% endif %}
+  {% endwith %}
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+
+
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% if form.instance.pk %}Editar paquete {{ form.instance.tracking_number }}{% else %}Crear paquete{% endif %}{% endblock %}
+
+{% block content %}
+  <div class="max-w-5xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-semibold">
+        {% if form.instance.pk %}
+          Editar paquete
+          <span class="text-gray-500">#{{ form.instance.tracking_number }}</span>
+        {% else %}
+          Crear paquete
+        {% endif %}
+      </h1>
+
+      <a href="{% url 'packages:list' %}" class="text-sm underline">← Volver a la lista</a>
+    </div>
+
+    {# Mensaje de permisos (la view debe proteger; aquí solo avisamos) #}
+    {% if not perms.packages.change_package and form.instance.pk %}
+      <div class="p-3 mb-4 rounded bg-yellow-50 text-yellow-800 text-sm">
+        No tienes permisos para editar este paquete. Solo lectura.
+      </div>
+    {% endif %}
+
+    {% if form.errors %}
+      <div class="p-3 mb-4 rounded bg-red-50 text-red-700 text-sm">
+        Por favor corrige los errores marcados.
+      </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+      {% csrf_token %}
+
+      {# Si usas crispy + tailwind, esto renderiza los campos con estilos #}
+      {{ form|crispy }}
+
+      <div class="flex items-center gap-3">
+        <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+          {% if form.instance.pk %}Guardar cambios{% else %}Crear paquete{% endif %}
+        </button>
+        <a href="{% url 'packages:list' %}" class="px-4 py-2 rounded border">Cancelar</a>
+
+        {# Solo admins/supervisores pueden borrar desde esta vista (opcional) #}
+        {% if form.instance.pk and perms.packages.delete_package %}
+          <a href="{% url 'packages:delete' form.instance.pk %}"
+             class="ml-auto px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
+             onclick="return confirm('¿Seguro que deseas eliminar este paquete?');">
+            Eliminar
+          </a>
+        {% endif %}
+      </div>
+    </form>
+
+    {# Sección auxiliar: detalles actuales en modo edición #}
+    {% if form.instance.pk %}
+      <div class="mt-10">
+        <h2 class="text-lg font-medium mb-2">Resumen</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div class="p-3 rounded border">
+            <div class="font-semibold">Tracking</div>
+            <div>{{ form.instance.tracking_number }}</div>
+          </div>
+          <div class="p-3 rounded border">
+            <div class="font-semibold">Estado</div>
+            <div>{{ form.instance.get_status_display|default:form.instance.status }}</div>
+          </div>
+          <div class="p-3 rounded border">
+            <div class="font-semibold">Conductor asignado</div>
+            <div>
+              {% if form.instance.assigned_driver %}
+                {{ form.instance.assigned_driver }}
+              {% else %}
+                —
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

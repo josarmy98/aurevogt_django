@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto mt-8 space-y-6">
+  <div class="bg-white shadow rounded p-6">
+    <h2 class="text-2xl font-bold mb-4">
+      {% if form.instance.pk %}Editar asignación{% else %}Nueva asignación{% endif %}
+    </h2>
+    <form method="post">
+      {% csrf_token %}
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm text-gray-600">Fecha de servicio</label>
+          {{ form.service_date }}
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600">Conductor</label>
+          {{ form.driver }}
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600">Estado</label>
+          {{ form.status }}
+        </div>
+      </div>
+      <div class="mt-4">
+        <button class="bg-green-600 text-white px-4 py-2 rounded">Guardar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="bg-white shadow rounded p-6">
+    <h3 class="text-xl font-semibold mb-3">Asignación de paquetes</h3>
+
+    <!-- Filtros rápidos -->
+    <form action="" method="get" class="flex flex-wrap gap-2 mb-4">
+      <input type="text" name="zipcode" placeholder="ZIP code" value="{{ request.GET.zipcode }}" class="border rounded px-3 py-2">
+      <input type="text" name="city" placeholder="Ciudad" value="{{ request.GET.city }}" class="border rounded px-3 py-2">
+      <button class="px-3 py-2 bg-gray-800 text-white rounded">Filtrar sin asignar</button>
+      {% if form.instance.pk %}
+        <a href="{% url 'assignments:edit' form.instance.pk %}" class="px-3 py-2 bg-gray-200 rounded">Limpiar</a>
+      {% else %}
+        <a href="{% url 'assignments:create' %}" class="px-3 py-2 bg-gray-200 rounded">Limpiar</a>
+      {% endif %}
+      {% if form.instance.pk %}
+        <button type="button"
+                class="px-3 py-2 bg-blue-600 text-white rounded"
+                hx-get="{% url 'assignments:auto_preview' form.instance.pk %}"
+                hx-include="[name='zipcode'], [name='city']"
+                hx-target="#auto-assign-preview"
+                hx-swap="innerHTML">
+          Vista previa por ZIP/Ciudad
+        </button>
+        <button type="button"
+                class="px-3 py-2 bg-indigo-600 text-white rounded"
+                hx-post="{% url 'assignments:auto_commit' form.instance.pk %}"
+                hx-include="[name='zipcode'], [name='city']"
+                hx-target="#route-list"
+                hx-swap="innerHTML">
+          Aplicar auto-asignación
+        </button>
+      {% else %}
+        <span class="px-3 py-2 bg-blue-300 text-white rounded opacity-60 cursor-not-allowed"
+              title="Guarda la asignación primero para auto-asignar">Vista previa por ZIP/Ciudad</span>
+        <span class="px-3 py-2 bg-indigo-300 text-white rounded opacity-60 cursor-not-allowed"
+              title="Guarda la asignación primero para auto-asignar">Aplicar auto-asignación</span>
+      {% endif %}
+    </form>
+    <div id="auto-assign-preview" class="mb-4"></div>
+
+    <!-- Dos columnas: sin asignar / de la ruta -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Sin asignar -->
+      <div>
+        <h4 class="font-semibold mb-2">Paquetes sin asignar ({{ unassigned_packages|length }})</h4>
+        <div id="pool"
+             class="min-h-[300px] border-2 border-dashed rounded p-3 bg-gray-50">
+          {% for p in unassigned_packages %}
+          <div class="bg-white border rounded p-2 mb-2"
+               draggable="true"
+               data-id="{{ p.id }}">
+            <div class="flex items-center justify-between">
+              <div class="font-mono text-sm">{{ p.tracking_number }}</div>
+              {% if form.instance.pk %}
+              <button type="button"
+                      hx-post="{% url 'assignments:add_pkg' form.instance.pk %}"
+                      hx-vals='{"package_id":"{{ p.id }}"}'
+                      hx-target="#route-list"
+                      hx-swap="innerHTML"
+                      class="text-blue-600 text-sm">Añadir ➜</button>
+              {% else %}
+              <span class="text-gray-400 text-sm cursor-not-allowed" title="Guarda la asignación antes de añadir paquetes">Añadir ➜</span>
+              {% endif %}
+            </div>
+            <div class="text-xs text-gray-500">
+              {{ p.addr_city }}, {{ p.addr_state }} {{ p.addr_zip }}
+            </div>
+          </div>
+          {% empty %}
+          <div class="text-gray-500">No hay paquetes sin asignar (con los filtros actuales).</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- En la ruta -->
+      <div>
+        <h4 class="font-semibold mb-2">Paquetes en esta ruta ({{ route_packages|length }})</h4>
+        <div id="route-list" class="min-h-[300px] border rounded p-3">
+          {% for p in route_packages %}
+          <div class="bg-white border rounded p-2 mb-2 flex items-center justify-between">
+            <div>
+              <div class="font-mono text-sm">{{ p.tracking_number }}</div>
+              <div class="text-xs text-gray-500">
+                {{ p.addr_city }}, {{ p.addr_state }} {{ p.addr_zip }}
+              </div>
+            </div>
+            <button type="button"
+                    hx-post="{% url 'assignments:remove_pkg' form.instance.pk %}"
+                    hx-vals='{"package_id":"{{ p.id }}"}'
+                    hx-target="#route-list"
+                    hx-swap="innerHTML"
+                    class="text-red-600 text-sm">Quitar</button>
+          </div>
+          {% empty %}
+          <div class="text-gray-500">Aún no hay paquetes en esta ruta.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 flex gap-2">
+      <span class="px-3 py-2 bg-indigo-300 text-white rounded opacity-60 cursor-not-allowed"
+            title="Optimización aún no implementada">
+        Optimizar (próximamente)
+      </span>
+      {% if form.instance.pk %}
+        <a href="{% url 'assignments:edit' form.instance.pk %}" class="px-3 py-2 bg-green-600 text-white rounded">
+          Guardar lista
+        </a>
+      {% else %}
+        <span class="px-3 py-2 bg-green-300 text-white rounded opacity-60 cursor-not-allowed"
+              title="Guarda la asignación primero para poder guardar lista">
+          Guardar lista
+        </span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+<script>
+  // Carga HTMX si no está presente y, cuando cargue, conecta el manejador de CSRF
+  (function ensureHtmxAndCsrf() {
+    function addCsrfHook() {
+      function getCookie(name) {
+        var m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+        return m ? m.pop() : '';
+      }
+      document.addEventListener('htmx:configRequest', function (e) {
+        var token = getCookie('csrftoken');
+        if (token) {
+          e.detail.headers['X-CSRFToken'] = token;
+        }
+      });
+    }
+    if (!window.htmx) {
+      var s = document.createElement('script');
+      s.src = 'https://unpkg.com/htmx.org@1.9.12';
+      s.onload = addCsrfHook;
+      document.head.appendChild(s);
+    } else {
+      addCsrfHook();
+    }
+  })();
+</script>
+{% endblock %}

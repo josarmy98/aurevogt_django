@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-5xl mx-auto mt-8 space-y-6">
+  <div class="flex items-center justify-between">
+    <h2 class="text-2xl font-bold">Cumplimiento SLA</h2>
+    <form method="get" class="flex gap-2">
+      <input type="date" name="date_from" value="{{ request.GET.date_from }}" class="border rounded px-3 py-2">
+      <input type="date" name="date_to" value="{{ request.GET.date_to }}" class="border rounded px-3 py-2">
+      <input type="number" step="1" min="50" max="100" name="target" value="{{ target|default:95 }}"
+             class="border rounded px-3 py-2 w-28" placeholder="Meta %">
+      <button class="px-4 py-2 bg-gray-800 text-white rounded">Aplicar</button>
+    </form>
+  </div>
+
+  <div class="bg-white shadow rounded p-6">
+    <canvas id="chartSlaDaily" height="140"></canvas>
+  </div>
+
+  <div class="bg-white shadow rounded p-6">
+    <h3 class="text-lg font-semibold mb-3">Resumen</h3>
+    <ul class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <li class="bg-gray-100 p-3 rounded">
+        <div class="text-xs text-gray-500">Promedio %</div>
+        <div class="text-xl font-bold">{{ avg_sla|default:"-" }}</div>
+      </li>
+      <li class="bg-gray-100 p-3 rounded">
+        <div class="text-xs text-gray-500">Días ≥ meta</div>
+        <div class="text-xl font-bold">{{ days_meeting|default:"-" }}</div>
+      </li>
+      <li class="bg-gray-100 p-3 rounded">
+        <div class="text-xs text-gray-500">Días totales</div>
+        <div class="text-xl font-bold">{{ days_total|default:"-" }}</div>
+      </li>
+      <li class="bg-gray-100 p-3 rounded">
+        <div class="text-xs text-gray-500">Último día</div>
+        <div class="text-xl font-bold">{{ last_day|default:"-" }}</div>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const series = {{ sla_daily|safe }}; // [{date:"2025-08-27", sla:0.93}, ...]
+  const target = {{ target|default:95 }};
+  new Chart(document.getElementById('chartSlaDaily').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: series.map(x => x.date),
+      datasets: [
+        { label: 'SLA', data: series.map(x => Math.round(x.sla * 100)) },
+        { label: 'Meta', data: series.map(_ => target), borderDash: [6,6] }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { y: { ticks: { callback: v => v + '%' }, min: 0, max: 100 } }
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto mt-10 bg-white shadow-lg rounded-lg p-6">
+  <h2 class="text-2xl font-bold mb-6">Perfil de {{ request.user.username }}</h2>
+
+  <div class="space-y-1">
+    <p><strong>Nombre:</strong> {{ request.user.first_name }} {{ request.user.last_name }}</p>
+    <p><strong>Email:</strong> {{ request.user.email }}</p>
+    <p><strong>Último acceso:</strong> {{ request.user.last_login }}</p>
+    <p><strong>Miembro desde:</strong> {{ request.user.date_joined|date:"d/m/Y H:i" }}</p>
+  </div>
+
+  {% if driver %}
+    <div class="mt-6 border-t pt-4">
+      <h3 class="text-xl font-semibold mb-2">Información de Conductor</h3>
+      {% if vehicle %}
+        <p><strong>Vehículo:</strong> {{ vehicle }}</p>
+        {% if vehicle.plate %}<p><strong>Placa:</strong> {{ vehicle.plate }}</p>{% endif %}
+        {% if vehicle.model %}<p><strong>Modelo:</strong> {{ vehicle.model }}</p>{% endif %}
+      {% else %}
+        <p>No tiene vehículo activo.</p>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="mt-6">
+    <a href="{% url 'logout' %}" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Cerrar sesión</a>
+  </div>
+</div>
+{% endblock %}

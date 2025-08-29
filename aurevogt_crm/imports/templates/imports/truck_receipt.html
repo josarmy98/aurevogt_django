@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-3xl mx-auto mt-8 bg-white shadow rounded p-6 print:shadow-none print:p-0">
+  <div class="flex items-start justify-between">
+    <div>
+      <h1 class="text-2xl font-bold">Recibo de Camión</h1>
+      <div class="text-gray-600">AUREVOGT 3PL — Warehouse {{ warehouse.name|default:"-" }}</div>
+    </div>
+    <div class="text-right">
+      <div class="text-sm text-gray-600">Fecha: {{ receipt.date|date:"Y-m-d H:i" }}</div>
+      <div class="text-sm text-gray-600">Folio: <span class="font-mono">{{ receipt.code }}</span></div>
+    </div>
+  </div>
+
+  <hr class="my-4">
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="bg-gray-50 p-3 rounded">
+      <div class="text-sm text-gray-500">Transportista</div>
+      <div class="font-semibold">{{ receipt.carrier_name }}</div>
+      <div class="text-sm text-gray-500">Placas</div>
+      <div class="font-mono">{{ receipt.truck_plate|default:"-" }}</div>
+    </div>
+    <div class="bg-gray-50 p-3 rounded">
+      <div class="text-sm text-gray-500">Contacto</div>
+      <div>{{ receipt.driver_name|default:"-" }} — {{ receipt.driver_phone|default:"-" }}</div>
+      <div class="text-sm text-gray-500">Referencia</div>
+      <div class="font-mono">{{ receipt.reference|default:"-" }}</div>
+    </div>
+  </div>
+
+  <div class="mt-6">
+    <h3 class="text-lg font-semibold">Resumen</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+      <div class="bg-gray-100 p-3 rounded">
+        <div class="text-xs text-gray-500">Paquetes totales</div>
+        <div class="text-xl font-bold">{{ summary.total_packages }}</div>
+      </div>
+      <div class="bg-gray-100 p-3 rounded">
+        <div class="text-xs text-gray-500">Con daño</div>
+        <div class="text-xl font-bold text-red-600">{{ summary.damaged|default:"0" }}</div>
+      </div>
+      <div class="bg-gray-100 p-3 rounded">
+        <div class="text-xs text-gray-500">ZIPs distintos</div>
+        <div class="text-xl font-bold">{{ summary.unique_zips }}</div>
+      </div>
+      <div class="bg-gray-100 p-3 rounded">
+        <div class="text-xs text-gray-500">Peso total (kg)</div>
+        <div class="text-xl font-bold">{{ summary.total_weight|default:"-" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-6">
+    <h3 class="text-lg font-semibold">Paquetes (primeros 50)</h3>
+    <div class="overflow-auto border rounded">
+      <table class="min-w-full">
+        <thead class="bg-gray-100 text-gray-700">
+          <tr>
+            <th class="py-2 px-3 text-left">Tracking</th>
+            <th class="py-2 px-3 text-left">Destinatario</th>
+            <th class="py-2 px-3 text-left">Dirección</th>
+            <th class="py-2 px-3 text-left">ZIP</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in sample_packages %}
+          <tr class="border-b">
+            <td class="py-2 px-3 font-mono">{{ p.tracking_number }}</td>
+            <td class="py-2 px-3">{{ p.recipient_name }}</td>
+            <td class="py-2 px-3">{{ p.addr_street }}, {{ p.addr_city }}, {{ p.addr_state }}</td>
+            <td class="py-2 px-3">{{ p.addr_zip }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center py-6 text-gray-500">Sin paquetes.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="mt-6">
+    <h3 class="text-lg font-semibold">Firmas</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
+      <div>
+        <div class="h-20 border-b"></div>
+        <div class="text-sm text-gray-600 mt-1">Operador de almacén</div>
+      </div>
+      <div>
+        <div class="h-20 border-b"></div>
+        <div class="text-sm text-gray-600 mt-1">Conductor / Transportista</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-6 flex items-center justify-between print:hidden">
+    <a href="{% url 'imports:list' %}" class="text-blue-700 hover:underline">Volver</a>
+    <button onclick="window.print()" class="px-4 py-2 bg-gray-800 text-white rounded">Imprimir</button>
+  </div>
+</div>
+{% endblock %}

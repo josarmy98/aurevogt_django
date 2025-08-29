@@ -1,0 +1,50 @@
+
+
+{% extends "base.html" %}
+
+{% block title %}
+Lista de Paquetes
+{% endblock %}
+
+{% block content %}
+<h1>Lista de Paquetes</h1>
+
+{% if packages %}
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Tracking</th>
+            <th>Cliente</th>
+            <th>Dirección</th>
+            <th>Estado</th>
+            <th>Conductor Asignado</th>
+            <th>Última Actualización</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for package in packages %}
+        <tr>
+            <td>{{ package.id }}</td>
+            <td>{{ package.tracking_number }}</td>
+            <td>{{ package.customer }}</td>
+            <td>{{ package.address }}</td>
+            <td>{{ package.status }}</td>
+            <td>{{ package.assigned_driver }}</td>
+            <td>{{ package.updated_at }}</td>
+            <td>
+                {% if perms.packages.change_package %}
+                    <a href="{% url 'packages:package_update' package.id %}">Editar</a>
+                    |
+                    <a href="{% url 'packages:package_delete' package.id %}">Eliminar</a>
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No hay paquetes en la lista.</p>
+{% endif %}
+{% endblock %}

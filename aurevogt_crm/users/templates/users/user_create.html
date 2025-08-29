@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+{% if request.user.is_superuser %}
+  <div class="d-flex justify-content-center align-items-center min-vh-100">
+    <div class="card shadow-sm p-4" style="min-width: 400px;">
+      <h1 class="mb-4 text-center">Crear usuario</h1>
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label>Username</label>
+          <input class="form-control form-control-lg" type="text" name="username" required>
+        </div>
+        <div class="mb-3">
+          <label>Password</label>
+          <input class="form-control form-control-lg" type="password" name="password" required>
+        </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" id="is_driver" name="is_driver">
+          <label class="form-check-label" for="is_driver">Es Driver</label>
+        </div>
+        <div class="mb-3">
+          <label>Vehículo (opcional)</label>
+          <select class="form-select form-control-lg" name="vehicle_id">
+            <option value="">-- sin asignar --</option>
+            {% for v in vehicles %}
+              <option value="{{ v.id }}">{{ v.plate }} - {{ v.model }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button class="btn btn-primary w-100">Crear</button>
+      </form>
+    </div>
+  </div>
+{% else %}
+  <p class="text-danger">No tienes permisos para acceder a esta página.</p>
+{% endif %}
+{% endblock %}

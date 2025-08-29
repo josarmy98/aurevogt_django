@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-3xl mx-auto mt-8 space-y-6">
+  <h2 class="text-2xl font-bold">Nueva importación</h2>
+
+  <!-- Subir CSV -->
+  <div class="bg-white shadow rounded p-6">
+    <h3 class="text-lg font-semibold mb-3">Importar desde CSV</h3>
+    <form method="post" enctype="multipart/form-data" action="{% url 'imports:form' %}">
+      {% csrf_token %}
+      <input type="hidden" name="source" value="speedx_csv">
+      <div class="space-y-3">
+        <input type="file" name="upload" accept=".csv,text/csv" class="block w-full" required>
+        <div class="text-sm text-gray-600">
+          El CSV debe incluir: <code class="font-mono">tracking_number, recipient_name, addr_street, addr_city, addr_state, addr_zip</code> (mínimo).
+        </div>
+        <button class="px-4 py-2 bg-blue-600 text-white rounded">Subir y procesar</button>
+        {% if sample_csv_url %}
+          <a class="ml-2 px-4 py-2 bg-gray-200 rounded" href="{{ sample_csv_url }}" target="_blank">Descargar plantilla</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- SpeedX API -->
+  <div class="bg-white shadow rounded p-6">
+    <h3 class="text-lg font-semibold mb-3">Importar desde SpeedX API</h3>
+    <form method="post" action="{% url 'imports:form' %}">
+      {% csrf_token %}
+      <input type="hidden" name="source" value="speedx_api">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm text-gray-600">Fecha desde</label>
+          <input type="date" name="date_from" class="border rounded px-3 py-2 w-full">
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600">Fecha hasta</label>
+          <input type="date" name="date_to" class="border rounded px-3 py-2 w-full">
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm text-gray-600">Filtro (opcional)</label>
+          <input type="text" name="filter" placeholder="zipcode / ciudad / estado / status"
+                 class="border rounded px-3 py-2 w-full">
+        </div>
+      </div>
+      <div class="mt-3">
+        <button class="px-4 py-2 bg-indigo-600 text-white rounded">Sincronizar</button>
+        <span class="text-sm text-gray-500 ml-2">Se creará un nuevo lote con el resultado.</span>
+      </div>
+    </form>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <a href="{% url 'imports:list' %}" class="text-blue-700 hover:underline">Volver al historial</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-10 bg-white shadow-lg rounded-lg p-6">
+  <h2 class="text-2xl font-bold mb-6">Registro</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+      Registrarse
+    </button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-xl font-semibold">Conductores</h1>
+    {% if request.user.is_staff %}
+      <a href="{% url 'drivers:create' %}" class="px-3 py-2 bg-green-600 text-white rounded">Nuevo</a>
+    {% endif %}
+  </div>
+  <table class="w-full text-left border">
+    <thead>
+      <tr>
+        <th class="p-2 border">Usuario</th>
+        <th class="p-2 border">Licencia</th>
+        <th class="p-2 border">Vehículo</th>
+        <th class="p-2 border">Estado</th>
+        {% if request.user.is_staff %}
+          <th class="p-2 border">Acciones</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in drivers %}
+      <tr>
+        <td class="p-2 border">
+          {% if d.user %}
+            {{ d.user.get_full_name|default:d.user.username }}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td class="p-2 border">{{ d.license_number }}</td>
+        <td class="p-2 border">{{ d.vehicle|default:"—" }}</td>
+        <td class="p-2 border">{{ d.get_status_display|default:d.status }}</td>
+        {% if request.user.is_staff %}
+          <td class="p-2 border">
+            <a href="{% url 'drivers:detail' d.pk %}" class="underline">Ver</a> ·
+            <a href="{% url 'drivers:edit' d.pk %}" class="underline">Editar</a>
+          </td>
+        {% endif %}
+      </tr>
+      {% empty %}
+      <tr><td class="p-2 border" colspan="{% if request.user.is_staff %}5{% else %}4{% endif %}">Sin conductores.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

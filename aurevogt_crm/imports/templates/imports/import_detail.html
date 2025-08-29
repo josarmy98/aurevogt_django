@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-5xl mx-auto mt-8 space-y-6">
+  <div class="bg-white shadow rounded p-6">
+    <h2 class="text-2xl font-bold mb-2">Importación #{{ batch.id }}</h2>
+    <p class="text-gray-700">
+      <strong>Origen:</strong> {{ batch.source }} |
+      <strong>Archivo:</strong> {{ batch.file_name|default:"-" }} |
+      <strong>Estado:</strong> {{ batch.status }}<br>
+      <strong>Totales:</strong> {{ batch.success_count }}/{{ batch.total_records }}
+      {% if batch.error_count %} — <span class="text-red-600">{{ batch.error_count }} errores</span>{% endif %}<br>
+      <strong>Importado por:</strong> {{ batch.imported_by|default:"-" }} |
+      <strong>Fecha:</strong> {{ batch.imported_at }}
+    </p>
+    <div class="mt-4 flex gap-2">
+      {% if batch.report_url %}
+        <a href="{{ batch.report_url }}" target="_blank"
+           class="px-3 py-2 bg-gray-800 text-white rounded">Descargar reporte</a>
+      {% endif %}
+      {% if batch.sample_url %}
+        <a href="{{ batch.sample_url }}" target="_blank"
+           class="px-3 py-2 bg-gray-200 rounded">Descargar CSV original</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="bg-white shadow rounded p-6">
+    <h3 class="text-xl font-semibold mb-3">Errores</h3>
+    <div class="overflow-auto">
+      <table class="min-w-full">
+        <thead class="bg-gray-100 text-gray-700">
+          <tr>
+            <th class="py-2 px-4 text-left">Fila</th>
+            <th class="py-2 px-4 text-left">Tracking</th>
+            <th class="py-2 px-4 text-left">Campo</th>
+            <th class="py-2 px-4 text-left">Descripción</th>
+            <th class="py-2 px-4 text-left">Valor recibido</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in errors %}
+          <tr class="border-b">
+            <td class="py-2 px-4">{{ e.row_number }}</td>
+            <td class="py-2 px-4 font-mono">{{ e.tracking_number|default:"-" }}</td>
+            <td class="py-2 px-4">{{ e.field_name }}</td>
+            <td class="py-2 px-4 text-sm text-red-700">{{ e.message }}</td>
+            <td class="py-2 px-4 text-xs text-gray-600 break-all">{{ e.value|default:"" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center py-6 text-gray-500">Sin errores 🎉</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

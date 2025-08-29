@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto mt-10">
+  <h2 class="text-2xl font-bold mb-6">Usuarios</h2>
+
+  <table class="min-w-full bg-white shadow-md rounded-lg">
+    <thead class="bg-gray-200 text-gray-700">
+      <tr>
+        <th class="py-2 px-4">ID</th>
+        <th class="py-2 px-4">Usuario</th>
+        <th class="py-2 px-4">Email</th>
+        <th class="py-2 px-4">Activo</th>
+        <th class="py-2 px-4">Último acceso</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr class="border-b hover:bg-gray-50">
+        <td class="py-2 px-4">{{ u.id }}</td>
+        <td class="py-2 px-4">{{ u.username }}</td>
+        <td class="py-2 px-4">{{ u.email }}</td>
+        <td class="py-2 px-4">
+          {% if u.is_active %}
+            ✅
+          {% else %}
+            ❌
+          {% endif %}
+        </td>
+        <td class="py-2 px-4">{{ u.last_login }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" class="text-center py-4">No hay usuarios registrados</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-6xl mx-auto mt-8">
+  <div class="flex items-center justify-between">
+    <h2 class="text-2xl font-bold">Historial de importaciones</h2>
+    <a href="{% url 'imports:form' %}" class="px-4 py-2 bg-blue-600 text-white rounded">➕ Nueva importación</a>
+  </div>
+
+  <form method="get" class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+    <input name="q" value="{{ request.GET.q }}" placeholder="Buscar por archivo/origen"
+           class="border rounded px-3 py-2">
+    <select name="source" class="border rounded px-3 py-2">
+      <option value="">— Origen —</option>
+      <option value="csv" {% if request.GET.source == 'csv' %}selected{% endif %}>CSV</option>
+      <option value="speedx_api" {% if request.GET.source == 'speedx_api' %}selected{% endif %}>SpeedX API</option>
+    </select>
+    <select name="status" class="border rounded px-3 py-2">
+      <option value="">— Estado —</option>
+      <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pendiente</option>
+      <option value="running" {% if request.GET.status == 'running' %}selected{% endif %}>Procesando</option>
+      <option value="success" {% if request.GET.status == 'success' %}selected{% endif %}>Éxito</option>
+      <option value="failed" {% if request.GET.status == 'failed' %}selected{% endif %}>Falló</option>
+    </select>
+    <button class="bg-gray-800 text-white rounded px-3 py-2">Filtrar</button>
+  </form>
+
+  <div class="mt-6 bg-white shadow rounded overflow-hidden">
+    <table class="min-w-full">
+      <thead class="bg-gray-100 text-gray-700">
+        <tr>
+          <th class="py-2 px-4 text-left">ID</th>
+          <th class="py-2 px-4 text-left">Origen</th>
+          <th class="py-2 px-4 text-left">Archivo / Parámetros</th>
+          <th class="py-2 px-4 text-center">Registros</th>
+          <th class="py-2 px-4 text-left">Importado por</th>
+          <th class="py-2 px-4 text-left">Fecha</th>
+          <th class="py-2 px-4 text-center">Estado</th>
+          <th class="py-2 px-4 text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in batches %}
+        <tr class="border-b hover:bg-gray-50">
+          <td class="py-2 px-4">#{{ b.id }}</td>
+          <td class="py-2 px-4">{{ b.source }}</td>
+          <td class="py-2 px-4">
+            {% if b.file_name %}<span class="font-mono">{{ b.file_name }}</span>{% else %}-{% endif %}
+          </td>
+          <td class="py-2 px-4 text-center">
+            {{ b.success_count }}/{{ b.total_records }}
+            {% if b.error_count %}<span class="text-red-600 text-sm">({{ b.error_count }} err)</span>{% endif %}
+          </td>
+          <td class="py-2 px-4">
+            {% if request.user.is_authenticated %}
+              {{ request.user.get_full_name|default:request.user.username }}
+            {% elif b.imported_by %}
+              {{ b.imported_by.get_full_name|default:b.imported_by.username }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td class="py-2 px-4">{{ b.imported_at }}</td>
+          <td class="py-2 px-4 text-center">
+            <span class="px-2 py-1 rounded text-white
+              {% if b.status == 'success' %}bg-green-600{% elif b.status == 'failed' %}bg-red-600{% elif b.status == 'running' %}bg-yellow-500{% else %}bg-gray-500{% endif %}">
+              {{ b.status }}
+            </span>
+          </td>
+          <td class="py-2 px-4 text-center">
+            <div class="inline-flex items-center gap-2 justify-center">
+              <a class="text-blue-600 hover:underline" href="{% url 'imports:detail' b.id %}">Ver</a>
+              <span class="mx-1">|</span>
+              <form method="post" action="{% url 'imports:delete' b.id %}" class="inline" onsubmit="return confirm('¿Eliminar importación #{{ b.id }}? Esto no borra los paquetes importados.');">
+                {% csrf_token %}
+                <button type="submit" class="text-red-600 hover:underline">Eliminar</button>
+              </form>
+              {% if b.report_url %}
+                <span class="mx-1">|</span>
+                <a class="text-gray-700 hover:underline" href="{{ b.report_url }}" target="_blank" rel="noopener">Reporte</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td class="py-6 text-center text-gray-500" colspan="8">No hay importaciones aún.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj %}
+  <div class="mt-4 flex justify-center gap-2">
+    {% if page_obj.has_previous %}
+      <a class="px-3 py-1 border rounded" href="?page={{ page_obj.previous_page_number }}">&larr; Anterior</a>
+    {% endif %}
+    <span class="px-3 py-1">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a class="px-3 py-1 border rounded" href="?page={{ page_obj.next_page_number }}">Siguiente &rarr;</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

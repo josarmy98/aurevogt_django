@@ -1,0 +1,76 @@
+{% if assignment.packages.exists %}
+  <table class="min-w-full divide-y divide-gray-200 text-sm">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="px-3 py-2 text-left">Tracking</th>
+        <th class="px-3 py-2 text-left">Destinatario</th>
+        <th class="px-3 py-2 text-left">Dirección</th>
+        <th class="px-3 py-2 text-left">Zip</th>
+        <th class="px-3 py-2 text-left">Acciones</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 bg-white">
+      {% for pkg in assignment.packages.all %}
+        <tr>
+          <td class="px-3 py-2 font-mono">{{ pkg.tracking_number }}</td>
+          <td class="px-3 py-2">{{ pkg.recipient_name }}</td>
+          <td class="px-3 py-2">
+            {{ pkg.addr_street }}, {{ pkg.addr_city }} {{ pkg.addr_state }}
+          </td>
+          <td class="px-3 py-2">{{ pkg.addr_zip }}</td>
+          <td class="px-3 py-2">
+            <button
+              hx-post="{% url 'assignments:remove_pkg' assignment.pk %}"
+              hx-vals='{"pkg_id": "{{ pkg.id }}"}'
+              hx-target="#route-list"
+              hx-swap="outerHTML"
+              class="text-red-600 hover:underline"
+            >
+              Quitar
+            </button>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="text-gray-500">No hay paquetes asignados todavía.</p>
+{% endif %}
+{% if assignment.packages.exists %}
+  <table class="min-w-full divide-y divide-gray-200 text-sm">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="px-3 py-2 text-left">Tracking</th>
+        <th class="px-3 py-2 text-left">Destinatario</th>
+        <th class="px-3 py-2 text-left">Dirección</th>
+        <th class="px-3 py-2 text-left">Zip</th>
+        <th class="px-3 py-2 text-left">Acciones</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 bg-white">
+      {% for pkg in assignment.packages.all %}
+        <tr>
+          <td class="px-3 py-2 font-mono">{{ pkg.tracking_number }}</td>
+          <td class="px-3 py-2">{{ pkg.recipient_name }}</td>
+          <td class="px-3 py-2">
+            {{ pkg.addr_street }}, {{ pkg.addr_city }} {{ pkg.addr_state }}
+          </td>
+          <td class="px-3 py-2">{{ pkg.addr_zip }}</td>
+          <td class="px-3 py-2">
+            <button
+              hx-post="{% url 'assignments:remove_pkg' assignment.pk %}"
+              hx-vals='{"pkg_id": "{{ pkg.id }}"}'
+              hx-target="#route-list"
+              hx-swap="outerHTML"
+              class="text-red-600 hover:underline"
+            >
+              Quitar
+            </button>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="text-gray-500">No hay paquetes asignados todavía.</p>
+{% endif %}

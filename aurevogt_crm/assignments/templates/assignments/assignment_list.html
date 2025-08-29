@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto mt-8">
+  <div class="flex items-center justify-between">
+    <h2 class="text-2xl font-bold">Rutas asignadas</h2>
+    <a href="{% url 'assignments:create' %}"
+       class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+      ➕ Nueva asignación
+    </a>
+  </div>
+
+  <form method="get" class="mt-4 flex gap-3">
+    <input type="date" name="service_date" value="{{ request.GET.service_date }}"
+           class="border rounded px-3 py-2"/>
+    <input type="text" name="q" placeholder="Buscar por driver/placa"
+           value="{{ request.GET.q }}" class="border rounded px-3 py-2 flex-1"/>
+    <button class="bg-gray-800 text-white px-4 py-2 rounded">Filtrar</button>
+  </form>
+
+  <div class="mt-6 bg-white shadow rounded-lg overflow-hidden">
+    <table class="min-w-full">
+      <thead class="bg-gray-100 text-gray-700">
+        <tr>
+          <th class="py-2 px-4 text-left">Fecha</th>
+          <th class="py-2 px-4 text-left">Conductor</th>
+          <th class="py-2 px-4 text-left">Vehículo</th>
+          <th class="py-2 px-4 text-center">Paquetes</th>
+          <th class="py-2 px-4 text-center">Iniciada</th>
+          <th class="py-2 px-4 text-center">Finalizada</th>
+          <th class="py-2 px-4 text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in assignments %}
+        <tr class="border-b hover:bg-gray-50">
+          <td class="py-2 px-4">{{ a.service_date }}</td>
+          <td class="py-2 px-4">
+            {{ a.driver.user.first_name }} {{ a.driver.user.last_name }}
+            <div class="text-xs text-gray-500">Lic. {{ a.driver.license_number }}</div>
+          </td>
+          <td class="py-2 px-4">{{ a.driver.vehicle.plate|default:"-" }}</td>
+          <td class="py-2 px-4 text-center">{{ a.total_packages }}</td>
+          <td class="py-2 px-4 text-center">{{ a.started_at|default:"-" }}</td>
+          <td class="py-2 px-4 text-center">{{ a.ended_at|default:"-" }}</td>
+          <td class="py-2 px-4 text-center">
+            <a href="{% url 'assignments:detail' a.id %}" class="text-blue-600 hover:underline">Ver</a>
+            <span class="mx-1">|</span>
+            <a href="{% url 'assignments:edit' a.id %}" class="text-green-600 hover:underline">Editar</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center py-6">No hay asignaciones</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

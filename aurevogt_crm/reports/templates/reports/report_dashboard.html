@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-7xl mx-auto mt-8 space-y-8">
+  <div class="flex items-center justify-between">
+    <h2 class="text-2xl font-bold">Dashboard de Reportes</h2>
+    <form method="get" class="flex gap-2">
+      <input type="date" name="date_from" value="{{ request.GET.date_from }}" class="border rounded px-3 py-2">
+      <input type="date" name="date_to" value="{{ request.GET.date_to }}" class="border rounded px-3 py-2">
+      <button class="px-4 py-2 bg-gray-800 text-white rounded">Filtrar</button>
+    </form>
+  </div>
+
+  <!-- Productividad por conductor -->
+  <div class="bg-white shadow rounded p-6">
+    <h3 class="text-lg font-semibold mb-4">Productividad por Conductor</h3>
+    <canvas id="chartProductivity" height="120"></canvas>
+  </div>
+
+  <!-- SLA por día -->
+  <div class="bg-white shadow rounded p-6">
+    <h3 class="text-lg font-semibold mb-4">Cumplimiento SLA (diario)</h3>
+    <canvas id="chartSla" height="120"></canvas>
+  </div>
+
+  <!-- Fallos por motivo -->
+  <div class="bg-white shadow rounded p-6">
+    <h3 class="text-lg font-semibold mb-4">Fallos por Motivo</h3>
+    <canvas id="chartFailed" height="120"></canvas>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // Contexto de Django -> JS (ajusta a tus llaves reales)
+  const prod = {{ productivity|safe }}; // [{driver:"Juan", delivered:20, failed:3}, ...]
+  const slaDaily = {{ sla_daily|safe }}; // [{date:"2025-08-27", sla:0.92}, ...]
+  const failedReasons = {{ failed_by_reason|safe }}; // [{reason:"customer_absent", count:10}, ...]
+
+  // Productividad por conductor
+  new Chart(document.getElementById('chartProductivity').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: prod.map(x => x.driver),
+      datasets: [
+        { label: 'Entregadas', data: prod.map(x => x.delivered) },
+        { label: 'Fallidas', data: prod.map(x => x.failed) }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+
+  // SLA diario (línea)
+  new Chart(document.getElementById('chartSla').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: slaDaily.map(x => x.date),
+      datasets: [{ label: 'SLA', data: slaDaily.map(x => Math.round(x.sla * 100)) }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { y: { ticks: { callback: v => v + '%' }, min: 0, max: 100 } }
+    }
+  });
+
+  // Fallos por motivo (torta)
+  new Chart(document.getElementById('chartFailed').getContext('2d'), {
+    type: 'pie',
+    data: {
+      labels: failedReasons.map(x => x.reason),
+      datasets: [{ label: 'Fallos', data: failedReasons.map(x => x.count) }]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+</script>
+{% endblock %}

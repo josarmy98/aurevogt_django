@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1 class="text-xl font-semibold mb-4">
+    {% if mode == "edit" %}Editar conductor{% else %}Nuevo conductor{% endif %}
+  </h1>
+
+  {% if not form.user.field.queryset.exists or not form.vehicle.field.queryset.exists %}
+    <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
+      Si los desplegables aparecen vacíos, primero crea <a href="/admin/auth/user/add/" class="underline">usuarios</a>
+      y/o <a href="/admin/vehicles/vehicle/add/" class="underline">vehículos</a> en el admin.
+    </div>
+  {% endif %}
+
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div>
+      <label class="block text-sm">Usuario</label>
+      {{ form.user.errors }}
+      {{ form.user }}
+    </div>
+    <div>
+      <label class="block text-sm"># Licencia</label>
+      {{ form.license_number.errors }}
+      {{ form.license_number }}
+    </div>
+    <div>
+      <label class="block text-sm">Vehículo</label>
+      {{ form.vehicle.errors }}
+      {{ form.vehicle }}
+    </div>
+    <div>
+      <label class="block text-sm">Estado</label>
+      {{ form.status.errors }}
+      {{ form.status }}
+    </div>
+
+    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">
+      Guardar
+    </button>
+    <a href="{% url 'drivers:list' %}" class="px-4 py-2 border rounded">Cancelar</a>
+  </form>
+{% endblock %}

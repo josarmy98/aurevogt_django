@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto mt-8 space-y-6">
+  <div class="bg-white shadow rounded p-6">
+    <h2 class="text-2xl font-bold mb-2">Ruta #{{ assignment.id }} — {{ assignment.service_date }}</h2>
+    <p class="text-gray-700">
+      <strong>Conductor:</strong> {{ assignment.driver.user.first_name }} {{ assignment.driver.user.last_name }}
+      (Lic. {{ assignment.driver.license_number }})<br>
+      <strong>Vehículo:</strong> {{ assignment.driver.vehicle.plate|default:"-" }}<br>
+      <strong>Estado:</strong>
+      {% if assignment.started_at and not assignment.ended_at %} En curso
+      {% elif assignment.ended_at %} Finalizada
+      {% else %} Pendiente {% endif %}
+    </p>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+      <div class="bg-gray-50 p-3 rounded">
+        <div class="text-gray-500 text-sm">Paquetes</div>
+        <div class="text-xl font-semibold">{{ assignment.total_packages }}</div>
+      </div>
+      <div class="bg-gray-50 p-3 rounded">
+        <div class="text-gray-500 text-sm">Distancia planificada (km)</div>
+        <div class="text-xl font-semibold">{{ assignment.total_distance_km|default:"-" }}</div>
+      </div>
+      <div class="bg-gray-50 p-3 rounded">
+        <div class="text-gray-500 text-sm">Inicio</div>
+        <div class="text-xl font-semibold">{{ assignment.started_at|default:"-" }}</div>
+      </div>
+      <div class="bg-gray-50 p-3 rounded">
+        <div class="text-gray-500 text-sm">Fin</div>
+        <div class="text-xl font-semibold">{{ assignment.ended_at|default:"-" }}</div>
+      </div>
+    </div>
+    <div class="mt-4 flex gap-2">
+      <a href="{% url 'assignments:start' assignment.id %}" class="px-3 py-2 bg-blue-600 text-white rounded">Iniciar ruta</a>
+      <a href="{% url 'assignments:end' assignment.id %}" class="px-3 py-2 bg-gray-800 text-white rounded">Finalizar ruta</a>
+    </div>
+  </div>
+
+  <div class="bg-white shadow rounded p-6">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-xl font-semibold">Paquetes asignados</h3>
+      <form method="get" class="flex gap-2">
+        <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Buscar tracking / dirección" class="border rounded px-3 py-2">
+        <button class="px-3 py-2 bg-gray-800 text-white rounded">Filtrar</button>
+      </form>
+    </div>
+
+    <form method="post" action="{% url 'assignments:bulk_action' assignment.id %}">
+      {% csrf_token %}
+      <div class="overflow-auto">
+        <table class="min-w-full">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="py-2 px-4"><input type="checkbox" onclick="document.querySelectorAll('.pkgcb').forEach(cb=>cb.checked=this.checked)"></th>
+              <th class="py-2 px-4 text-left">Tracking</th>
+              <th class="py-2 px-4 text-left">Destinatario</th>
+              <th class="py-2 px-4 text-left">Dirección</th>
+              <th class="py-2 px-4 text-center">Estado</th>
+              <th class="py-2 px-4 text-center">Promised</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in route_packages %}
+            <tr class="border-b hover:bg-gray-50">
+              <td class="py-2 px-4"><input class="pkgcb" type="checkbox" name="package_ids" value="{{ p.id }}"></td>
+              <td class="py-2 px-4 font-mono">{{ p.tracking_number }}</td>
+              <td class="py-2 px-4">{{ p.recipient_name }}</td>
+              <td class="py-2 px-4">{{ p.addr_street|default:"" }}, {{ p.addr_city|default:"" }}, {{ p.addr_state|default:"" }} {{ p.addr_zip|default:"" }}</td>
+              <td class="py-2 px-4 text-center">{{ p.status }}</td>
+              <td class="py-2 px-4 text-center">{{ p.promised_date|date:"Y-m-d" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center py-6">Sin paquetes asignados</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-4 flex items-center gap-2">
+        <select name="action" class="border rounded px-3 py-2">
+          <option value="">— Acción —</option>
+          <option value="set_ofd">Marcar out_for_delivery</option>
+          <option value="set_delivered">Marcar delivered</option>
+          <option value="set_failed">Marcar failed_attempt</option>
+          <option value="unassign">Desasignar</option>
+        </select>
+        <button class="px-4 py-2 bg-blue-600 text-white rounded">Aplicar</button>
+      </div>
+    </form>
+
+    <div id="route-list">
+      {% include "assignments/route_list.html" %}
+    </div>
+  </div>
+</div>
+
+{% if import_packages %}
+<div class="bg-white shadow rounded p-6 mt-6">
+  <div class="flex items-center justify-between mb-3">
+    <h3 class="text-xl font-semibold">Paquetes de la importación</h3>
+    {% if import_batch %}
+      <div class="text-sm text-gray-600">
+        Importación: <span class="font-mono">{{ import_batch.id }}</span>
+        {% if import_batch.created_by %} • por {{ import_batch.created_by }}{% endif %}
+        {% if import_batch.created_at %} • {{ import_batch.created_at|date:"Y-m-d H:i" }}{% endif %}
+      </div>
+    {% endif %}
+  </div>
+  <div class="overflow-auto">
+    <table class="min-w-full">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="py-2 px-4 text-left">Tracking</th>
+          <th class="py-2 px-4 text-left">Destinatario</th>
+          <th class="py-2 px-4 text-left">Dirección</th>
+          <th class="py-2 px-4 text-center">Estado</th>
+          <th class="py-2 px-4 text-center">ZIP</th>
+          <th class="py-2 px-4 text-center">Ciudad</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in import_packages %}
+        <tr class="border-b hover:bg-gray-50">
+          <td class="py-2 px-4 font-mono">{{ p.tracking_number }}</td>
+          <td class="py-2 px-4">{{ p.recipient_name }}</td>
+          <td class="py-2 px-4">{{ p.addr_street|default:"" }}, {{ p.addr_city|default:"" }}, {{ p.addr_state|default:"" }} {{ p.addr_zip|default:"" }}</td>
+          <td class="py-2 px-4 text-center">{{ p.status }}</td>
+          <td class="py-2 px-4 text-center">{{ p.addr_zip }}</td>
+          <td class="py-2 px-4 text-center">{{ p.addr_city }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center py-6">Esta importación no tiene paquetes vinculados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

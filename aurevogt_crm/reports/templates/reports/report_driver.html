@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-7xl mx-auto mt-8 space-y-6">
+  <div class="flex items-center justify-between">
+    <h2 class="text-2xl font-bold">Entregas por Conductor</h2>
+    <form method="get" class="flex gap-2">
+      <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Buscar conductor, licencia, email"
+             class="border rounded px-3 py-2 w-72">
+      <input type="date" name="date_from" value="{{ request.GET.date_from }}" class="border rounded px-3 py-2">
+      <input type="date" name="date_to" value="{{ request.GET.date_to }}" class="border rounded px-3 py-2">
+      <button class="px-4 py-2 bg-gray-800 text-white rounded">Filtrar</button>
+    </form>
+  </div>
+
+  <div class="bg-white shadow rounded overflow-auto">
+    <table class="min-w-full">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="px-4 py-2 text-left">Conductor</th>
+          <th class="px-4 py-2 text-left">Licencia</th>
+          <th class="px-4 py-2 text-center">Total</th>
+          <th class="px-4 py-2 text-center">Entregadas</th>
+          <th class="px-4 py-2 text-center">Fallidas</th>
+          <th class="px-4 py-2 text-center">OFD</th>
+          <th class="px-4 py-2 text-center">% Éxito</th>
+          <th class="px-4 py-2 text-center">Entregas/hora</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr class="border-b hover:bg-gray-50">
+          <td class="px-4 py-2">{{ r.driver_first_name }} {{ r.driver_last_name }}</td>
+          <td class="px-4 py-2">{{ r.driver_license_number }}</td>
+          <td class="px-4 py-2 text-center">{{ r.total }}</td>
+          <td class="px-4 py-2 text-center">{{ r.delivered }}</td>
+          <td class="px-4 py-2 text-center">{{ r.failed }}</td>
+          <td class="px-4 py-2 text-center">{{ r.ofd }}</td>
+          <td class="px-4 py-2 text-center">{{ r.success_rate|floatformat:2 }}</td>
+          <td class="px-4 py-2 text-center">{{ r.delivered_per_hour }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="px-4 py-6 text-center text-gray-500">Sin datos.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="bg-white shadow rounded p-6">
+    <h3 class="text-lg font-semibold mb-4">Top Conductores (Entregas)</h3>
+    <canvas id="chartTop" height="120"></canvas>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const rows = {{ rows|safe }}; // misma estructura que tu endpoint de productividad
+  const top = rows.slice(0, 10);
+  new Chart(document.getElementById('chartTop').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: top.map(x => (x.driver_first_name || '-') + ' ' + (x.driver_last_name || '')),
+      datasets: [{ label: 'Entregadas', data: top.map(x => x.delivered) }]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+</script>
+{% endblock %}

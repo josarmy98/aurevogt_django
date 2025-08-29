@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Dashboard · AUREVOGT{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+  <!-- KPIs -->
+  <div>
+    <h1 class="text-2xl font-bold">Dashboard</h1>
+    <p class="text-sm text-gray-600">Resumen del día y accesos rápidos</p>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white rounded shadow p-5">
+      <div class="text-xs text-gray-500">Paquetes del día</div>
+      <div class="text-3xl font-bold">{{ kpi.today_total|default:0 }}</div>
+    </div>
+    <div class="bg-white rounded shadow p-5">
+      <div class="text-xs text-gray-500">Entregados</div>
+      <div class="text-3xl font-bold">{{ kpi.today_delivered|default:0 }}</div>
+    </div>
+    <div class="bg-white rounded shadow p-5">
+      <div class="text-xs text-gray-500">OFD (en ruta)</div>
+      <div class="text-3xl font-bold">{{ kpi.today_ofd|default:0 }}</div>
+    </div>
+    <div class="bg-white rounded shadow p-5">
+      <div class="text-xs text-gray-500">% Éxito (hoy)</div>
+      <div class="text-3xl font-bold">
+        {{ kpi.today_success_rate|default:0|floatformat:1 }}%
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Acciones rápidas -->
+  <div class="bg-white rounded shadow p-5">
+    <h2 class="text-lg font-semibold mb-4">Acciones rápidas</h2>
+    <div class="flex flex-wrap gap-3">
+      <a href="{% url 'admin:imports_importbatch_changelist' %}"
+         class="px-4 py-2 bg-gray-900 text-white rounded hover:bg-gray-800">Importar CSV</a>
+      <a href="{% url 'assignments:list' %}"
+         class="px-4 py-2 bg-gray-100 border rounded hover:bg-gray-50">Asignaciones</a>
+      <a href="{% url 'packages:list' %}"
+         class="px-4 py-2 bg-gray-100 border rounded hover:bg-gray-50">Ver paquetes</a>
+      <a href="{% url 'reports:dashboard' %}"
+         class="px-4 py-2 bg-gray-100 border rounded hover:bg-gray-50">Ver reportes</a>
+    </div>
+  </div>
+
+  <!-- Mapa de conductores -->
+  <div class="bg-white rounded shadow p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold">Mapa de conductores</h2>
+      <span class="text-xs text-gray-500">Ubicaciones actuales</span>
+    </div>
+    <div id="map" class="leaflet-map rounded border" style="height: 420px;"></div>
+  </div>
+
+  <!-- Actividad reciente -->
+  <div class="bg-white rounded shadow p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold">Actividad reciente</h2>
+      <form method="get" class="flex gap-2">
+        <input type="date" name="date" value="{{ request.GET.date }}" class="border rounded px-3 py-2">
+        <button class="px-4 py-2 bg-gray-800 text-white rounded">Actualizar</button>
+      </form>
+    </div>
+    <div class="overflow-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="px-4 py-2 text-left">Hora</th>
+            <th class="px-4 py-2 text-left">Evento</th>
+            <th class="px-4 py-2 text-left">Tracking</th>
+            <th class="px-4 py-2 text-left">Conductor</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in recent_events %}
+          <tr class="border-b">
+            <td class="px-4 py-2">{{ e.at_ts|date:'H:i' }}</td>
+            <td class="px-4 py-2">{{ e.type }} → {{ e.status_to }}</td>
+            <td class="px-4 py-2 font-mono">{{ e.package__tracking_number|default:e.package.tracking_number }}</td>
+            <td class="px-4 py-2">
+              {% if e.driver__user__first_name %}
+                {{ e.driver__user__first_name }} {{ e.driver__user__last_name }}
+              {% elif e.driver and e.driver.user %}
+                {{ e.driver.user.first_name }} {{ e.driver.user.last_name }}
+              {% else %}-{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="px-4 py-6 text-center text-gray-500">Sin actividad.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tabla de entregas últimos 7 días -->
+  <div class="bg-white rounded shadow p-5">
+    <h2 class="text-lg font-semibold mb-4">Entregas últimos 7 días</h2>
+    <div class="overflow-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="px-4 py-2 text-left">Fecha</th>
+            <th class="px-4 py-2 text-left">Entregadas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for x in series7d %}
+          <tr class="border-b">
+            <td class="px-4 py-2">{{ x.date }}</td>
+            <td class="px-4 py-2">{{ x.delivered }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="2" class="px-4 py-6 text-center text-gray-500">Sin datos</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{{ drivers_points|json_script:"drivers-points" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  // 1) Asegura que Leaflet esté
+  if (typeof L === 'undefined') {
+    console.error('Leaflet no cargó (L is undefined). Revisa &lt;script&gt; en base.html o CSP.');
+    return;
+  }
+
+  // 2) Toma los puntos inyectados por Django
+  const el = document.getElementById('drivers-points');
+  const points = el ? JSON.parse(el.textContent || '[]') : [];
+
+  // 3) Centro por defecto (Miami). Si hay puntos, centra al primero.
+  const center = points.length
+    ? [points[0].map_lat, points[0].map_lng]
+    : [25.7617, -80.1918];
+
+  // Asegura altura por si el contenedor viene colapsado
+  const mapDiv = document.getElementById('map');
+  if (mapDiv && (!mapDiv.style.height || parseInt(getComputedStyle(mapDiv).height, 10) < 100)) {
+    mapDiv.style.height = '420px';
+  }
+
+  const map = L.map('map').setView(center, points.length ? 12 : 11);
+
+  // 4) Capa OSM
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  // 5) Coloca marcadores
+  const bounds = [];
+  points.forEach((p) => {
+    if (p.map_lat != null && p.map_lng != null) {
+      const marker = L.marker([p.map_lat, p.map_lng]).addTo(map);
+      const name = p['user__username'] || `Driver #${p.id}`;
+      const when = p.captured_at ? new Date(p.captured_at).toLocaleString() : '';
+      marker.bindPopup(`${name}${when ? '<br><span style="color:#6b7280">' + when + '</span>' : ''}`);
+      bounds.push([p.map_lat, p.map_lng]);
+    }
+  });
+
+  // 6) Ajusta a todos los puntos si hay más de uno
+  if (bounds.length > 1) {
+    map.fitBounds(bounds, { padding: [24, 24] });
+  }
+
+  // Invalida tamaño en el siguiente frame por si el contenedor se renderizó tarde
+  setTimeout(() => map.invalidateSize(), 0);
+})();
+</script>
+{% endblock %}

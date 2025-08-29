@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-6xl mx-auto mt-8 space-y-6">
+  <div class="flex items-center justify-between">
+    <h2 class="text-2xl font-bold">Fallos por Motivo</h2>
+    <form method="get" class="flex gap-2">
+      <input type="date" name="date_from" value="{{ request.GET.date_from }}" class="border rounded px-3 py-2">
+      <input type="date" name="date_to" value="{{ request.GET.date_to }}" class="border rounded px-3 py-2">
+      <input type="text" name="driver" value="{{ request.GET.driver }}" placeholder="Driver ID / nombre"
+             class="border rounded px-3 py-2">
+      <button class="px-4 py-2 bg-gray-800 text-white rounded">Filtrar</button>
+    </form>
+  </div>
+
+  <div class="bg-white shadow rounded p-6">
+    <h3 class="text-lg font-semibold mb-4">Distribución de motivos</h3>
+    <canvas id="chartReasons" height="120"></canvas>
+  </div>
+
+  <div class="bg-white shadow rounded overflow-auto">
+    <table class="min-w-full">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="px-4 py-2 text-left">Fecha</th>
+          <th class="px-4 py-2 text-left">Tracking</th>
+          <th class="px-4 py-2 text-left">Conductor</th>
+          <th class="px-4 py-2 text-left">Motivo</th>
+          <th class="px-4 py-2 text-left">Notas</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in attempts %}
+        <tr class="border-b">
+          <td class="px-4 py-2">{{ a.at_ts|date:"Y-m-d H:i" }}</td>
+          <td class="px-4 py-2 font-mono">{{ a.package.tracking_number }}</td>
+          <td class="px-4 py-2">
+            {% if a.driver and a.driver.user %}
+              {{ a.driver.user.first_name }} {{ a.driver.user.last_name }}
+            {% else %}-{% endif %}
+          </td>
+          <td class="px-4 py-2">{{ a.reason_code }}</td>
+          <td class="px-4 py-2 text-sm text-gray-700">{{ a.notes|default:"" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-4 py-6 text-center text-gray-500">Sin intentos fallidos en el rango.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const reasons = {{ failed_by_reason|safe }}; // [{reason:"address_not_found", count:8}, ...]
+  new Chart(document.getElementById('chartReasons').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: reasons.map(x => x.reason),
+      datasets: [{ label: 'Fallos', data: reasons.map(x => x.count) }]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+</script>
+{% endblock %}
